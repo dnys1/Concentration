@@ -8,16 +8,16 @@
 
 import Foundation
 
-struct Card : Equatable {
+struct Card : Hashable {
     var isFaceUp = false
     var isMatched = false
     var isSeen = false
-    var id: Int
+    private var id: Int
     
-    static var incrementingId = 0
+    private static var incrementingId = 0
     
     /// Get the next random ID
-    static func getRandomId() -> Int {
+    private static func getRandomId() -> Int {
         incrementingId += 1
         return incrementingId
     }
@@ -27,6 +27,14 @@ struct Card : Equatable {
     }
     
     static func ==(lhs: Card, rhs: Card) -> Bool {
-        return lhs.isFaceUp == rhs.isFaceUp && lhs.isMatched == rhs.isMatched && lhs.id == rhs.id
+        return lhs.id == rhs.id
+    }
+    
+    var hashValue: Int {
+        return id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }

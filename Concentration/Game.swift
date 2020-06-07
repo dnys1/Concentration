@@ -8,18 +8,39 @@
 
 import Foundation
 
-class Game {
+struct Game {
     /// The amount of time per decision.
-    static let timePerDecision: Float = 5.0
+    private static let timePerDecision: Float = 5.0
 
-    var cards = [Card]()
-    var isComplete = false
-    var score = 0.0
-    var timeLeft: Float
+    private(set) var cards = [Card]()
+    private(set) var isComplete = false
+    private(set) var score = 0.0
+    private(set) var timeLeft: Float
     
-    var indexOfOneAndOnlyFaceUpCard: Int?
+    private var indexOfOneAndOnlyFaceUpCard: Int? {
+        get {
+            var foundIndex: Int?
+            for index in cards.indices {
+                if !cards[index].isMatched, cards[index].isFaceUp, foundIndex == nil {
+                    foundIndex = index
+                }
+            }
+            return foundIndex
+        }
+        set {
+            for index in cards.indices {
+                if cards[index].isMatched {
+                    cards[index].isFaceUp = true
+                } else {
+                    cards[index].isFaceUp = (index == newValue)
+                }
+            }
+        }
+    }
     
     init(numberOfPairsOfCards: Int) {
+        assert(numberOfPairsOfCards > 0, "Concentration.init(\(numberOfPairsOfCards)): numberOfPairsOfCards must be greater than 0")
+        
         for _ in 0..<numberOfPairsOfCards {
             let card = Card()
             cards += [card, card]
@@ -28,18 +49,20 @@ class Game {
         shuffle()
     }
     
-    func updateTime() {
+    mutating func updateTime() {
         timeLeft = max(timeLeft - 0.1, 0)
     }
     
-    func handleTouch(onCard index: Int) {
+    mutating func handleTouch(onCard index: Int) {
+        assert(cards.indices.contains(index), "Concentration.chooseCard(onCard: \(index)): chosen index not in the cards")
+        
         if cards[index].isFaceUp {
             if !cards[index].isMatched {
                 cards[index].isFaceUp = false
             }
         } else {
             if let upIndex = indexOfOneAndOnlyFaceUpCard {
-                if index != upIndex, cards[index].id == cards[upIndex].id {
+                if index != upIndex, cards[index] == cards[upIndex] {
                     cards[index].isMatched = true
                     cards[upIndex].isMatched = true
                     indexOfOneAndOnlyFaceUpCard = nil
@@ -52,11 +75,6 @@ class Game {
                         isComplete = true
                     }
                 } else {
-                    for card in cards.filter({ $0.isFaceUp && !$0.isMatched }) {
-                        let cardIndex = cards.firstIndex(of: card)!
-                        cards[cardIndex].isFaceUp = false
-                    }
-                    
                     // Penalize 1 pt for getting the match wrong
                     // and having already seen this card.
                     if cards[index].isSeen {
@@ -70,22 +88,29 @@ class Game {
                 indexOfOneAndOnlyFaceUpCard = index
             }
             cards[index].isSeen = true
-            cards[index].isFaceUp = true
             
             // Reset the timer.
             timeLeft = Game.timePerDecision
         }
     }
     
-    func shuffle() {
+    private mutating func shuffle() {
         cards.shuffle()
     }
     
-    func reset() {
+    mutating func reset() {
         for cardIndex in cards.indices {
             cards[cardIndex].isMatched = false
             cards[cardIndex].isFaceUp = false
         }
         shuffle()
+    }
+}
+
+extension Collection {
+    /// For  `Collection`s with only one element, this returns that element.
+    /// Returns `nil` for all other Collections.
+    var oneAndOnly: Element? {
+        return count == 1 ? first : nil
     }
 }

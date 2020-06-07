@@ -10,10 +10,10 @@ import UIKit
 
 class ViewController: UIViewController {
     
-    lazy var game = Game(numberOfPairsOfCards: buttons.count / 2)
+    private lazy var game = Game(numberOfPairsOfCards: buttons.count / 2)
     
-    var theme = ThemeRepository()
-    var timer = Timer()
+    private var theme = ThemeRepository()
+    private var timer = Timer()
     
     @IBOutlet var buttons: [UIButton]!
     
@@ -67,14 +67,14 @@ class ViewController: UIViewController {
         startTimer()
     }
     
-    private var emojis: [Int: String] = [:]
+    private var emojis: [Card: String] = [:]
     
     func emoji(for card: Card) -> String {
-        if emojis[card.id] == nil {
-            emojis[card.id] = theme.getNextEmoji()
+        if emojis[card] == nil {
+            emojis[card] = theme.getNextEmoji()
         }
         
-        return emojis[card.id]!
+        return emojis[card]!
     }
     
     func updateViewFromModel() {
@@ -90,18 +90,26 @@ class ViewController: UIViewController {
             }
         }
         
+        // Set the Score label to be an NSAttributedString
         let scoreText = String(format: "%.1f", game.score)
-        gameScoreLabel.text = "Game Score: \(scoreText)"
+        let gameScoreLabelAttributes: [NSAttributedString.Key: Any] = [
+            .strokeWidth: 5.0,
+            .strokeColor: theme.getTextColor(),
+        ]
+        let gameScoreLabelAttributedString = NSAttributedString(string: "Game Score: \(scoreText)", attributes: gameScoreLabelAttributes)
+        gameScoreLabel.attributedText = gameScoreLabelAttributedString
         
         countdownProgressView.progress = game.timeLeft / 5.0
         
         if game.isComplete {
+            timer.invalidate()
             newGameButton.isEnabled = true
         }
     }
     
     @IBAction func startNewGame(_ sender: UIButton) {
         game.reset()
+        startTimer()
         updateViewFromModel()
     }
     
